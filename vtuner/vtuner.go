@@ -2,6 +2,7 @@ package vtuner
 
 import (
 	"encoding/xml"
+	"io"
 )
 
 const (
@@ -12,31 +13,41 @@ const (
 // Page is a struct that represents a page in the vTuner API.
 type Page struct {
 	XMLName     xml.Name `xml:"ListOfItems"`
-	Items       []Item   `xml:">Item"`
-	Count       int
-	NoDataCache bool `xml:"NoDataCache"`
+	Items       []Item   `xml:"Item"`
+	Count       int      `xml:"ItemsCount"`
+	NoDataCache string   `xml:"NoDataCache"`
 }
 
 func NewPage(items []Item, cache bool) *Page {
-	return &Page{
-		Items:       items,
-		NoDataCache: !cache,
+	result := &Page{
+		Items: items,
 	}
+
+	if cache {
+		result.NoDataCache = "no"
+	} else {
+		result.NoDataCache = "yes"
+	}
+
+	return result
 }
 
 func (p *Page) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	p.Count = len(p.Items)
+	start.Name.Local = "ListOfItems" // Override the XML name
+
 	return e.EncodeElement(*p, start)
 }
 
-func (p *Page) Render() ([]byte, error) {
+func (p *Page) Write(w io.Writer) error {
 	b, err := xml.MarshalIndent(p, "", " ")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b = append([]byte(header), b...)
-	return b, nil
+
+	_, err = w.Write(b)
+	return err
 }
 
 // Item is an interface that represents a generic item in the vTuner API.
