@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"path"
 
 	"github.com/alam0rt/tuna/vtuner"
 )
@@ -33,9 +34,30 @@ func addRoutes(
 	logger *slog.Logger,
 	config *Config,
 ) {
-	_ = logger
 	_ = config
+	mux.Handle("/setupapp/", handleSetupApp(logger))
 	mux.Handle("/", handleLandingPage(logger))
+}
+
+func handleSetupApp(logger *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("handling setupapp request", "path", r.URL.Path, "method", r.Method, "remote_addr", r.RemoteAddr)
+
+		if !r.URL.Query().Has("token") {
+			_, err := w.Write(vtuner.EncryptedToken)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		switch _, file := path.Split(r.URL.Path); file {
+		case "loginXML.asp":
+			handleLandingPage(logger)
+		}
+
+		http.Error(w, "not implemented", http.StatusNotImplemented)
+	})
 }
 
 func handleLandingPage(logger *slog.Logger) http.Handler {
@@ -55,7 +77,7 @@ func handleLandingPage(logger *slog.Logger) http.Handler {
 	}, false)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = logger
+		logger.Info("handling request", "path", r.URL.Path, "method", r.Method, "remote_addr", r.RemoteAddr)
 
 		w.Header().Add("Content-Type", "application/xml")
 		if err := page.Write(w); err != nil {

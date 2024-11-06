@@ -6,9 +6,11 @@ import (
 )
 
 const (
-	_      = `<EncryptedToken>0000000000000000</EncryptedToken>`
 	header = `<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>`
 )
+
+// BogusToken is a bogus token used in the vTuner API.
+var EncryptedToken = []byte(`<EncryptedToken>0000000000000000</EncryptedToken>`)
 
 // Page is a struct that represents a page in the vTuner API.
 type Page struct {
@@ -34,6 +36,8 @@ func NewPage(items []Item, cache bool) *Page {
 
 func (p *Page) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name.Local = "ListOfItems" // Override the XML name
+
+	p.Count = len(p.Items)
 
 	return e.EncodeElement(*p, start)
 }

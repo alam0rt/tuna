@@ -29,8 +29,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	defer cancel()
 
 	config := &server.Config{
-		Host: "localhost",
-		Port: "8080",
+		Host: "0.0.0.0",
+		Port: "80",
 	}
 	logger := slog.New(slog.NewJSONHandler(w, nil))
 
