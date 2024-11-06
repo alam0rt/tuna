@@ -69,6 +69,11 @@ func (d *Display) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // Previous is a struct that represents a previous item in the vTuner API.
 type Previous struct {
 	item
+	// URL is used to generate the URLPrevious and URLPreviousBackup fields.
+	// Set it to the URL of the previous item.
+	Url string `xml:"-"`
+
+	// Used for XML marshalling.
 	UrlPrevious       string `xml:"UrlPrevious"`
 	UrlPreviousBackup string `xml:"UrlPreviousBackup"` // defaults to UrlPrevious
 }
@@ -76,14 +81,18 @@ type Previous struct {
 func (p *Previous) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	p.ItemType = "Previous"
 
-	p.UrlPrevious = addBogusParam(p.UrlPrevious)
-	p.UrlPreviousBackup = p.UrlPrevious
+	p.UrlPrevious = addBogusParam(p.Url)
+	p.UrlPreviousBackup = addBogusParam(p.Url)
 	return e.EncodeElement(*p, start)
 }
 
 // Search is a struct that represents a search item in the vTuner API.
 type Search struct {
 	item
+	Caption string `xml:"-"`
+	URL     string `xml:"-"`
+
+	// Used for XML marshalling.
 	SearchURL          string `xml:"SearchURL"`
 	SearchURLBackup    string `xml:"SearchURLBackup"`
 	SearchCaption      string `xml:"SearchCaption"`
@@ -95,23 +104,24 @@ type Search struct {
 func (s *Search) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	s.ItemType = "Search"
 
-	if s.SearchButtonCancel == "" {
-		s.SearchButtonCancel = "Cancel"
-	}
+	s.SearchButtonCancel = "Cancel"
+	s.SearchButtonGo = "Search"
 
-	if s.SearchButtonGo == "" {
-		s.SearchButtonGo = "Search"
-	}
-
-	s.SearchURL = addBogusParam(s.SearchURL)
-	s.SearchURLBackup = s.SearchURL
+	s.SearchURL = addBogusParam(s.URL)
+	s.SearchURLBackup = addBogusParam(s.URL)
+	s.SearchCaption = s.Caption
+	s.SearchTextbox = "" // TODO: Implement search textbox
 
 	return e.EncodeElement(*s, start)
 }
 
 type Directory struct {
 	item
-	Title        string `xml:"Title"`
+	Title          string `xml:"Title"`
+	DestinationURL string `xml:"-"`
+	Count          int    `xml:"-"`
+
+	// Used for XML marshalling.
 	UrlDir       string `xml:"UrlDir"`
 	UrlDirBackup string `xml:"UrlDirBackup"`
 	DirCount     int    `xml:"DirCount"`
@@ -120,10 +130,33 @@ type Directory struct {
 func (d *Directory) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	d.ItemType = "Directory"
 
-	d.UrlDir = addBogusParam(d.UrlDir)
-	d.UrlDirBackup = d.UrlDir
+	d.UrlDir = addBogusParam(d.DestinationURL)
+	d.UrlDirBackup = addBogusParam(d.DestinationURL)
+	d.DirCount = d.Count
 
 	return e.EncodeElement(*d, start)
+}
+
+// def __init__(self, uid, name, description, url, icon, genre, location, mime, bitrate, bookmark)
+type Station struct {
+	item
+	ID          string `xml:"StationId"`
+	Name        string `xml:"StationName"`
+	URL         string `xml:"StationUrl"`
+	Description string `xml:"StationDescription"`
+	Logo        string `xml:"StationLogo"`
+	Format      string `xml:"StationFormat"`
+	Bitrate     int    `xml:"StationBandwidth"`
+	MIME        string `xml:"StationMime"`
+	Relia       int    `xml:"Relia"` // is always 3 I think
+	Bookmark    int    `xml:"Bookmark"`
+}
+
+func (s *Station) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	// TODO: add trackURL
+	s.ItemType = "Station"
+	s.Relia = 3
+	return e.EncodeElement(*s, start)
 }
 
 func addBogusParam(url string) string {

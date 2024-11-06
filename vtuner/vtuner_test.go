@@ -12,7 +12,15 @@ func TestFoo(t *testing.T) {
 		&vtuner.Display{
 			Display: "foo",
 		},
+		&vtuner.Previous{
+			Url: "http://localhost:8080/previous",
+		},
 	}, false)
+
+	_, err := page.Render()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	out, err := page.Render()
 	if err != nil {
