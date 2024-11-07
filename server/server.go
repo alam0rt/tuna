@@ -44,19 +44,23 @@ func handleSetupApp(logger *slog.Logger) http.Handler {
 		logger.Info("handling setupapp request", "path", r.URL.Path, "method", r.Method, "remote_addr", r.RemoteAddr)
 
 		if !r.URL.Query().Has("token") {
+			w.Header().Add("Content-Type", "application/xml")
 			_, err := w.Write(vtuner.EncryptedToken)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 			return
+		} else {
+			logger.Info("token provided", "token", r.URL.Query().Get("token"))
 		}
 
 		switch _, file := path.Split(r.URL.Path); file {
 		case "loginXML.asp":
 			handleLandingPage(logger)
+			return
+		default:
+			http.NotFound(w, r)
 		}
-
-		http.Error(w, "not implemented", http.StatusNotImplemented)
 	})
 }
 
